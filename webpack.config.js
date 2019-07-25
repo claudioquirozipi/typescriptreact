@@ -1,6 +1,8 @@
 const path = require('path');
-const MiniCssExtractPlugin = require('mini-css-extract-plugin');
+const { CheckerPlugin } = require('awesome-typescript-loader');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
+const webpack = require('webpack');
+const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 
 module.exports = {
     entry: './src/index.tsx',
@@ -8,37 +10,54 @@ module.exports = {
         path: path.resolve(__dirname, 'build'),
         filename: 'bundle.js'
     },
+    mode: 'development',
+    target: 'web',
+    devtool: 'source-map',
+    devServer: {
+        open: true,
+        hot: true,
+        host: 'localhost'
+    },
     resolve: {
-        extensions: ['.ts', '.tsx', '.js', '.jsx', '.json']
+        modules: [path.resolve(__dirname, './src'), 'node_modules'],
+        extensions: ['.ts', '.tsx', '.js'],
+        alias: {
+            '@app': path.resolve(__dirname, './src')
+        }
     },
     module: {
         rules: [
             {
-                test: /\.tsx?$/,
-                loader: "awesome-typescript-loader"
+                test: /\.(tsx|ts)$/,
+                exclude: /node_modules/,
+                use: {
+                    loader: 'awesome-typescript-loader'
+                }
             },
-            // {
-            //     test: /\.css$/,
-            //     use: [
-            //         MiniCssExtractPlugin.loader,
-            //         "css-loader"
-            //     ]
-            // },
             {
-                test: /\.css$/i,
-                use: ['style-loader', 'css-loader'],
+                test: /\.(png|jpg|gif)$/,
+                loader: 'file-loader',
+                options: {
+                    name: '[name].[ext]',
+                    outputPath: 'image'
+                },
             }
         ]
     },
     devServer: {
         proxy: {
-            '/api': 'http://127.0.0.1:50545',
-        },
+            '/api': {
+                target: 'http://ec2-52-39-195-83.us-west-2.compute.amazonaws.com/',
+                pathRewrite: { '^/api': '' }
+            },
+        }
     },
     plugins: [
+        new CheckerPlugin(),
+        new webpack.HotModuleReplacementPlugin(),
         new HtmlWebpackPlugin({
-            template: 'src/index.html'
+            template: 'src/index.html',
         }),
-        // new MiniCssExtractPlugin("style.css")
+        new CleanWebpackPlugin()
     ]
-}
+};
